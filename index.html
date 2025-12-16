@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2025 by jjiji16 (http://jsbin.com/qugomiq/3/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 노동가치 박물관</title>
+    <link rel="stylesheet" href="styles.css">
+<style id="jsbin-css">
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap');
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Noto Sans KR', sans-serif; 
+}
+
+:root {
+    --color-background-dark: #1a1a1a; 
+    --color-text-light: #b0b0b0; 
+    --color-accent-blue: #1755ef; /* 칙칙한 슬레이트 블루 */
+    --color-contrast-dark: #2a2a2a; /* 대비되는 어두운 배경 */
+    --color-light-cyan: #1755ef;
+    --color-dark-overlay: #00ff9a;
+    --stage-height: 100vh;
+    --dark-width: 0%; 
+    --scale-value: 1; 
+}
+
+#light-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-background-dark); 
+    z-index: 999; 
+    filter: blur(50px); */ /* 커서 주위에 부드러운 빛을 원할 경우 사용 */
+    /* 초기 clip-path: 전체를 덮고 있다가 JS로 커서 위치에 원형을 만듭니다. */
+    clip-path: circle(100px at 90% 90%); 
+    pointer-events: none;
+}
+
+body {
+    cursor: none;
+    box-shadow: inset 0 0 0 100vh var(--color-dark-overlay); 
+}
+
+#custom-cursor {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    /* 🌟 수정됨: 연파랑 빛의 색상 🌟 */
+    background: var(--color-light-cyan); 
+    mix-blend-mode: difference; /* 콘텐츠와 커서 색상을 다르게 혼합 */
+    transition: transform 0.1s ease-out;
+    pointer-events: none; /* 클릭 이벤트 통과 */
+    z-index: 1001; /* 모달 위에 오도록 설정 */
+    transform: translate(-50%, -50%);
+    opacity: 0.8;
+}
+
+/* 전체 컨테이너 및 배경: 파란색 */
+#container {
+    height: calc(3 * var(--stage-height) + 100vh); 
+    position: relative;
+    background-color: var(--color-accent-blue); /* 초기 배경은 파란색 */
+    color: var(--color-background-dark);
+  position: relative;
+    transition: box-shadow 0.1s linear;
+}
+
+.scroll-wrapper {
+    height: calc(3 * var(--stage-height));
+    position: relative;
+}
+
+.stage:not(.final-stage) {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex; 
+    overflow: hidden;
+}
+
+#stage-1, #stage-2, #stage-3 {
+    height: var(--stage-height); 
+    margin-bottom: calc(var(--stage-height) * -1 + 100vh); 
+}
+
+.final-stage {
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    background-color: var(--color-background-dark); 
+    color: var(--color-text-light);
+    z-index: 10;
+}
+
+.stage:not(.final-stage) .content-left {
+    height: 100%;
+    width: calc(100% - var(--dark-width)); 
+    background-color: var(--color-accent-blue); 
+    color: var(--color-contrast-dark);
+    display: flex; 
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center; 
+    padding: 50px;
+    text-align: center;
+    transition: width 0.1s linear; 
+    position: relative;
+    overflow: hidden; 
+}
+
+.stage:not(.final-stage) .content-right {
+    height: 100%;
+    width: var(--dark-width); 
+    background-color: var(--color-background-dark); 
+    color: var(--color-text-light); 
+    transition: width 0.1s linear;
+    /* content-right의 flex 속성은 분할 역할만 하도록 수정 */
+    display: block; 
+}
+
+.stage:not(.final-stage) .text-container {
+    position: relative;
+    width: 80%;
+    transform: none; 
+    transform-origin: center center; 
+    transition: transform 0.1s linear;
+}
+
+.stage h1 {
+    position: absolute;
+    top: calc(50% - 150px); 
+    left: 50%;
+    transform: translate(-50%, -50%); 
+    width: 100%;
+    font-size: 3.5em; 
+    font-weight: 900; 
+    line-height: 1.4; 
+    letter-spacing: -0.5px; 
+    white-space: normal; 
+    color: inherit; 
+}
+.slider-container {
+    position: relative;
+    width: 70%;
+    max-width: 900px;
+    height: 400px;
+    margin: 50px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-text-light);
+    color: var(--color-text-light);
+    font-size: 2em;
+    padding: 10px 15px;
+    cursor: pointer;
+    z-index: 20;
+    transition: background 0.3s, color 0.3s;
+    user-select: none;
+}
+
+.prev-btn {
+    left: -60px; /* 컨테이너 좌측 외부에 배치 */
+}
+.next-btn {
+    right: -60px; /* 컨테이너 우측 외부에 배치 */
+}
+
+/* ---------------------------------------------------- */
+/* 4단계 (Final Stage) 슬라이더 스타일 */
+/* ---------------------------------------------------- */
+.final-stage .full-content {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    padding-top: 80px;
+    position: relative;
+    z-index: 10;
+}
+
+.final-stage h2 {
+    color: var(--color-accent-blue);
+}
+
+.slider-container {
+    width: 70%;
+    max-width: 900px;
+    height: 600px;
+    margin: 50px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slider-viewport {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: 2px solid var(--color-text-light);
+    box-shadow: 10px
+}
+
+.slider-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s ease-in-out;
+}
+
+.slider-item {
+    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
+    position: relative; /* 작품명 및 호버 오버레이 위치 기준 */
+}
+
+.slider-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(80%) brightness(80%);
+    cursor: pointer; /* 클릭 가능하도록 커서 변경 */
+    transition: filter 0.3s ease;
+}
+
+/* 🌟 추가됨: 호버 시 이미지 어둡게 🌟 */
+.slider-item img:hover {
+    filter: grayscale(80%) brightness(50%); /* 호버 시 더 어둡게 */
+}
+
+/* 🌟 추가됨: 작품명 텍스트 🌟 */
+.item-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 0;
+    background-color: rgba(0, 0, 0, 0.5); /* 어두운 반투명 배경 */
+    color: var(--color-text-light);
+    font-size: 1em;
+    font-weight: bold;
+    text-align: center;
+    pointer-events: none; /* 이미지 클릭을 방해하지 않도록 설정 */
+}
+
+.slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.05); /* 투명하고 어두운 배경 */
+    border: 1px solid var(--color-text-light);
+    color: var(--color-text-light);
+    font-size: 2em;
+    padding: 10px 15px;
+    cursor: pointer;
+    z-index: 20;
+    transition: background 0.3s, color 0.3s;
+    user-select: none;
+}
+
+.slider-btn:hover {
+    background: var(--color-text-light);
+    color: var(--color-background-dark);
+}
+
+.prev-btn {
+    left: -60px;
+    padding: 10px;
+}
+
+.next-btn {
+    right: -60px;   
+    padding: 10px;
+
+}
+
+.hint-text {
+    bottom: 30px;
+    width: 100%;
+    text-align: center;
+    font-size: 1.2em;
+    z-index: 15;
+    opacity: 0.7;
+    color: var(--color-text-light);
+}
+
+.modal {
+    display: flex;
+    position: fixed;
+    z-index: 1000; /* 최상단에 위치 */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8); /* 어두운 오버레이 */
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+    opacity: 0;
+}
+
+.modal-content {
+    background-color: var(--color-background-dark);
+    color: var(--color-text-light);
+    margin: auto;
+    padding: 30px;
+    border: 1px solid var(--color-accent-blue);
+    width: 80%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.modal-content h3 {
+    color: var(--color-accent-blue);
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.modal-content p {
+    font-size: 1.1em;
+    line-height: 1.5;
+}
+
+.close-btn {
+    color: var(--color-text-light);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    cursor: pointer;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: var(--color-accent-blue);
+    text-decoration: none;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+    <div id="container">
+        <div class="scroll-wrapper">
+            <section class="stage" id="stage-1">
+                <div class="content-left">
+                    <div class="text-container">
+                        <h1>창의 노동 가치는<br>사라는가?</h1>
+                    </div>
+                </div>
+                <div class="content-right"></div>
+            </section>
+            
+            <section class="stage" id="stage-2">
+                <div class="content-left">
+                    <div class="text-container">
+                        <h1>줄어드는 가치와<br>쉽게 만드어진 창작물 속에 잠식되다</h1>
+                    </div>
+                </div>
+                <div class="content-right"></div>
+            </section>
+            
+            <section class="stage" id="stage-3">
+                <div class="content-left">
+                    <div class="text-container">
+                        <h1>기계에 의존하는 우리의 고뇌는 더이상 필요치 않은가?</h1>
+                    </div>
+                </div>
+                <div class="content-right"></div>
+            </section>
+        </div>
+
+        <section class="stage final-stage" id="stage-4">
+            <div class="full-content">
+                <h2>사라지는 창의 노동<br></h2>
+                <p>2025-<br>AI 작품 속 사라진 창의 노동,<br>그 변천을 나타낸다.</p>
+                <div class="slider-container">
+                    <button class="slider-btn prev-btn">←</button> 
+                    <div class="slider-viewport">
+                        <div class="slider-track">
+                            <div class="slider-item">
+                                <img src="https://imgur.com/qWxWAoP.png" alt="AI 이미지 1" data-title="FACSIMILE No.1" data-description="2021년 1월, ‘Avocado Armchair’라 입력한 텍스트는 수많은 이미지로 만들어져 우리에게 많은 선택지를 주는듯 하다. 어딘가 부족해 보이는 이미지는 아직 완벽하게 느껴지지는 않지만 마치 간편한 도구임을 알려주는것 같다.">
+                                <div class="item-title">선택지 No.1</div>
+                            </div>
+                            <div class="slider-item">
+                                <img src="https://imgur.com/d2YG3TR.png" alt="AI 이미지 2" data-title="COPY MACHINE 2" data-description="2022년 콜로라도 주립 박람회 디지털아트 부문 1위 수상장. 예술 부문에 특이점이 발생했다. 미드저니를 사용한 출품작이 우승으로 의견이 갈라졌다. 누군가는 기술을 이용한 큰 발전이라 하지만 누군가는 부정 행위라 한다. 앞으로 늘어날 AI사용에 우리는 구별할 수 있을까? 우리는 저만큼 AI를 활용할 수 있을까? ">
+                                <div class="item-title">구별 No.2</div>
+                            </div>
+                            <div class="slider-item">
+                                <img src="https://imgur.com/6VBi7l2.png" alt="AI 이미지 3" data-title="UNIFORMITY No.3" data-description="누구나 몇 번의 수정만으로 이미지를 생성가능하다. 기존 예술보다 돈이 덜 들고, 빠르며, 마치 무한정 만들어 낼 수 있는것 처럼 보인다.">
+                                <div class="item-title">접근성 No.3</div>
+                            </div>
+                            <div class="slider-item">
+                                <img src="https://imgur.com/nSSE8ls.png" alt="AI 이미지 4" data-title="UNORIGINALITY 4" data-description="미묘하게 다른 프롬프트에 같은 이미지. 따분해지는 창의성에 AI에 의존하기만 한 상상이 공장마냥 같은 그림만을 찍어낸다.">
+                                <div class="item-title">오류 No.4</div>
+                            </div>
+                            <div class="slider-item">
+                                <img src="https://imgur.com/NrrhaVf.png" alt="AI 이미지 5" data-title="SOULLESS WORK 5" data-description="AI에 대한 마지막 반발. 사라져가는 가치들 사이.">
+                                <div class="item-title">의미 No.5</div>
+                            </div>
+                            <div class="slider-item">
+                                <img src="https://imgur.com/NrrhaVf.png" alt="AI 이미지 6" data-title="ALGORITHM ART 6" data-description="더이상 당신의 프롬프트는 유의미하지 않다. 당신이 요청한 의도와는 관련도 없는 평화롭고 고리타분한 이미지만이 생성된다.">
+                                <div class="item-title">창의성 No.6</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="slider-btn next-btn">→</button> 
+                </div>
+            </div>
+        </section>
+    </div>
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3 id="modal-title"></h3>
+            <p id="modal-description"></p>
+        </div>
+    </div>
+    
+    <div id="custom-cursor"></div>
+
+    <script src="script.js"></script>
+<script id="jsbin-javascript">
+document.addEventListener('DOMContentLoaded', () => {
+    const root = document.documentElement;
+    const divisionStages = document.querySelectorAll('.stage:not(.final-stage)');
+    const container = document.getElementById('container'); // 🌟 컨테이너 요소 가져오기 🌟
+    const customCursor = document.getElementById('custom-cursor'); // 🌟 커스텀 커서 요소 가져오기 🌟
+
+    // 스크롤 및 비율 변수
+    const stageHeightVh = parseFloat(getComputedStyle(root).getPropertyValue('--stage-height').replace('vh', ''));
+    const divisionStageHeight = stageHeightVh * window.innerHeight / 100;
+    const divisionAreaTotalHeight = divisionStages.length * divisionStageHeight; 
+    
+    // 하이라이트 효과 변수
+    const HIGHLIGHT_RADIUS = 250; // 하이라이트 원형의 반지름 (크면 빛이 더 넓게 퍼짐)
+    const OVERLAY_COLOR = getComputedStyle(root).getPropertyValue('--color-dark-overlay').trim();
+
+    // ------------------------------------
+    // 1. 스크롤 및 분할 로직 (유지)
+    // ------------------------------------
+    const handleScroll = () => {
+        const scrollTop = window.scrollY;
+        let scrollRatio = 0;
+        
+        if (scrollTop < divisionAreaTotalHeight) {
+            scrollRatio = scrollTop / divisionAreaTotalHeight; 
+            const darkWidthPercent = scrollRatio * 100; 
+            root.style.setProperty('--dark-width', `${darkWidthPercent}%`);
+        } else {
+            root.style.setProperty('--dark-width', '100%');
+        }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+
+    // ------------------------------------
+    // 🌟 2. 마우스 추적 및 하이라이트 로직 🌟
+    // ------------------------------------
+    document.addEventListener('mousemove', (e) => {
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+        const scrollTop = window.scrollY;
+        
+        // 1. 커스텀 커서 위치 업데이트
+        customCursor.style.left = `${mouseX}px`;
+        customCursor.style.top = `${mouseY}px`;
+
+        // 2. 하이라이트 효과 업데이트
+        // 마우스 위치 (mouseX, mouseY)를 기준으로 하이라이트 원형을 만들고,
+        // 나머지 전체 화면을 어둡게 덮는 box-shadow를 적용합니다.
+        // 이때 Y축 좌표는 스크롤 위치를 반영해야 합니다 (e.clientY + window.scrollY).
+        
+        const highlightY = mouseY + scrollTop; // 컨테이너 기준으로 Y좌표 보정
+        
+        // CSS box-shadow를 사용하여 '하이라이트 원형'을 만듭니다.
+        // box-shadow: inset [x-offset] [y-offset] [blur-radius] [spread-radius] [color];
+        
+        // x-offset과 y-offset을 조정하여 하이라이트의 중심을 마우스 위치(mouseX, highlightY)로 이동
+        const offsetX = -(mouseX); 
+        const offsetY = -(highlightY);
+        
+        // spread-radius를 크게 설정하고 blur-radius를 조절하여 빛의 확산 정도를 제어
+        const shadowValue = `
+            inset ${offsetX}px ${offsetY}px ${HIGHLIGHT_RADIUS}px 
+            ${window.innerWidth + window.innerHeight}px 
+            ${OVERLAY_COLOR}
+        `;
+        
+        container.style.boxShadow = shadowValue;
+    });
+
+
+    // ------------------------------------
+    // 3. 4단계 슬라이더 및 모달 로직 (유지)
+    // ------------------------------------
+    const sliderTrack = document.querySelector('.slider-track');
+    const prevBtn = document.querySelector('.prev-btn');
+    const nextBtn = document.querySelector('.next-btn');
+    const sliderItems = document.querySelectorAll('.slider-item');
+    const totalItems = sliderItems.length;
+    let currentIndex = 0;
+
+    const updateSlider = () => {
+        const offset = -currentIndex * 100;
+        sliderTrack.style.transform = `translateX(${offset}%)`;
+    };
+
+    const nextSlide = () => {
+        currentIndex = (currentIndex + 1) % totalItems;
+        updateSlider();
+    };
+
+    const prevSlide = () => {
+        currentIndex = (currentIndex - 1 + totalItems) % totalItems;
+        updateSlider();
+    };
+
+    nextBtn.addEventListener('click', nextSlide);
+    prevBtn.addEventListener('click', prevSlide);
+    
+    // 작품 클릭 및 모달 로직
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDescription = document.getElementById('modal-description');
+    const closeBtn = document.querySelector('.close-btn');
+    const galleryImages = document.querySelectorAll('.slider-item img');
+
+    galleryImages.forEach(img => {
+        img.addEventListener('click', (e) => {
+            const title = e.target.getAttribute('data-title');
+            const description = e.target.getAttribute('data-description');
+            
+            modalTitle.textContent = title;
+            modalDescription.textContent = description;
+            
+            modal.classList.remove('hidden');
+        });
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+        }
+    });
+});
+</script>
+</body>
+</html>
