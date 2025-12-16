@@ -56,10 +56,9 @@ body {
 
 #custom-cursor {
     position: fixed;
-    width: 20px;
-    height: 20px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    /* 🌟 수정됨: 연파랑 빛의 색상 🌟 */
     background: var(--color-light-cyan); 
     mix-blend-mode: difference; /* 콘텐츠와 커서 색상을 다르게 혼합 */
     transition: transform 0.1s ease-out;
@@ -69,11 +68,10 @@ body {
     opacity: 0.8;
 }
 
-/* 전체 컨테이너 및 배경: 파란색 */
 #container {
     height: calc(3 * var(--stage-height) + 100vh); 
     position: relative;
-    background-color: var(--color-accent-blue); /* 초기 배경은 파란색 */
+    background-color: var(--color-accent-blue); 
     color: var(--color-background-dark);
   position: relative;
     transition: box-shadow 0.1s linear;
@@ -582,3 +580,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
